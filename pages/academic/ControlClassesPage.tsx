@@ -5,7 +5,6 @@ import { supabase } from '../../supabase';
 type School = {
   id: string;
   name: string;
-  code: string;
 };
 
 type Class = {
@@ -68,7 +67,7 @@ const ControlClassesPage = () => {
 
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
-        .select('*, school:schools(id, name, code)')
+        .select('*, school:schools(id, name)')
         .order('class_numeric');
 
       if (classesError) throw classesError;
@@ -76,7 +75,7 @@ const ControlClassesPage = () => {
 
       const { data: sectionsData, error: sectionsError } = await supabase
         .from('sections')
-        .select('*, school:schools(id, name, code)')
+        .select('*, school:schools(id, name)')
         .order('name');
 
       if (sectionsError) throw sectionsError;
