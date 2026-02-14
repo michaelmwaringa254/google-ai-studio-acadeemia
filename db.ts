@@ -1277,3 +1277,169 @@ export const upsertTwoFactorSettings = async (settings: Partial<TwoFactorSetting
         throw error;
     }
 }
+
+// --- BLOG ANALYTICS INTERFACES ---
+export interface BlogAnalytics {
+    id: string;
+    post_id: string;
+    view_date: string;
+    views: number;
+    unique_visitors: number;
+    avg_time_on_page: number;
+    bounce_rate: number;
+    created_at: string;
+}
+
+export interface BlogAuthor {
+    id: string;
+    user_id: string;
+    bio: string;
+    avatar_url: string;
+    social_twitter: string;
+    social_linkedin: string;
+    created_at: string;
+    updated_at: string;
+}
+
+// --- BLOG ANALYTICS DATA ACCESS FUNCTIONS ---
+export const getBlogAnalytics = async (postId: string, startDate?: string, endDate?: string): Promise<BlogAnalytics[]> => {
+    let query = supabase
+        .from('blog_analytics')
+        .select('*')
+        .eq('post_id', postId)
+        .order('view_date', { ascending: false });
+
+    if (startDate) {
+        query = query.gte('view_date', startDate);
+    }
+
+    if (endDate) {
+        query = query.lte('view_date', endDate);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('Error fetching blog analytics:', error);
+        return [];
+    }
+    return data as BlogAnalytics[];
+};
+
+export const getBlogAnalyticsSummary = async (postId: string): Promise<any> => {
+    const { data, error } = await supabase
+        .from('blog_analytics')
+        .select('*')
+        .eq('post_id', postId);
+
+    if (error) {
+        console.error('Error fetching analytics summary:', error);
+        return null;
+    }
+
+    const totalViews = (data as BlogAnalytics[]).reduce((sum, a) => sum + a.views, 0);
+    const totalVisitors = (data as BlogAnalytics[]).reduce((sum, a) => sum + a.unique_visitors, 0);
+    const avgTimeOnPage = (data as BlogAnalytics[]).length > 0
+        ? Math.round((data as BlogAnalytics[]).reduce((sum, a) => sum + a.avg_time_on_page, 0) / (data as BlogAnalytics[]).length)
+        : 0;
+
+    return {
+        totalViews,
+        totalVisitors,
+        avgTimeOnPage,
+        dataPoints: (data as BlogAnalytics[]).length
+    };
+};
+
+export const trackBlogView = async (postId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: existingRecord } = await supabase
+        .from('blog_analytics')
+        .select('*')
+        .eq('post_id', postId)
+        .eq('view_date', today)
+        .maybeSingle();
+
+    if (existingRecord) {
+        const { error } = await supabase
+            .from('blog_analytics')
+            .update({
+                views: (existingRecord.views || 0) + 1,
+            })
+            .eq('id', existingRecord.id);
+
+        if (error) {
+            console.error('Error updating analytics:', error);
+        }
+    } else {
+        const { error } = await supabase
+            .from('blog_analytics')
+            .insert({
+                post_id: postId,
+                view_date: today,
+                views: 1,
+                unique_visitors: 1
+            });
+
+        if (error) {
+            console.error('Error creating analytics record:', error);
+        }
+    }
+};
+
+export const getBlogAuthorProfile = async (userId: string): Promise<BlogAuthor | null> => {
+    const { data, error } = await supabase
+        .from('blog_authors')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error fetching author profile:', error);
+        return null;
+    }
+    return data as BlogAuthor;
+};
+
+export const upsertBlogAuthorProfile = async (userId: string, profile: Partial<BlogAuthor>) => {
+    const { error } = await supabase
+        .from('blog_authors')
+        .upsert({ user_id: userId, ...profile }, { onConflict: 'user_id' });
+
+    if (error) {
+        console.error('Error upserting author profile:', error);
+        throw error;
+    }
+};
+
+export const getFeaturedBlogPosts = async (limit: number = 5) => {
+    const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('is_featured', true)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching featured posts:', error);
+        return [];
+    }
+    return data;
+};
+
+export const getTopBlogPosts = async (limit: number = 10) => {
+    const { data, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('status', 'published')
+        .order('views_count', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching top posts:', error);
+        return [];
+    }
+    return data;
+};

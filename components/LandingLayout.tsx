@@ -45,7 +45,8 @@ const Header = () => {
     const [isMobileProductOpen, setMobileProductOpen] = useState(false);
     const [isMobileCompanyOpen, setMobileCompanyOpen] = useState(false);
 
-    const companyDropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const productDropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);  
+  const companyDropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { theme } = useTheme();
     const { cart } = useCart();
@@ -64,6 +65,9 @@ const Header = () => {
     // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
+            if (productDropdownTimeoutRef.current) {
+                clearTimeout(productDropdownTimeoutRef.current);
+            }
             if (companyDropdownTimeoutRef.current) {
                 clearTimeout(companyDropdownTimeoutRef.current);
             }
@@ -78,10 +82,24 @@ const Header = () => {
           </Link>
           <nav className="hidden lg:flex items-center space-x-8">
             <div 
-                className="relative" 
-                onMouseEnter={() => { setProductDropdownOpen(true); setCompanyDropdownOpen(false); }}
-                onMouseLeave={() => setProductDropdownOpen(false)}
-            >
+              className="relative" 
+              onMouseEnter={() => {
+                // Clear previous timeout if any
+                if (productDropdownTimeoutRef.current) {
+                  clearTimeout(productDropdownTimeoutRef.current);
+                  productDropdownTimeoutRef.current = null;
+                }
+                setProductDropdownOpen(true);
+                setCompanyDropdownOpen(false);
+            }}
+            onMouseLeave={() => {
+              // Set delay before closing
+              productDropdownTimeoutRef.current = setTimeout(() => {
+                setProductDropdownOpen(false);
+              }, 300); // same 300ms delay as company
+            }}
+        >
+
                 <button 
                     className="flex items-center text-text-primary dark:text-gray-200 hover:text-primary transition-colors duration-300 font-medium"
                 >
@@ -92,6 +110,7 @@ const Header = () => {
                     <div className="absolute top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border dark:border-gray-700 z-20">
                         <Link to="/modules" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2 text-text-primary dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Modules</Link>
                         <Link to="/versions" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2 text-text-primary dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Deployment</Link>
+                        <Link to="/msp" onClick={() => setProductDropdownOpen(false)} className="block px-4 py-2 text-text-primary dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">MSP</Link>
                     </div>
                 )}
             </div>
@@ -170,6 +189,7 @@ const Header = () => {
                         <div className="pl-4 pt-3 pb-2 space-y-3">
                              <Link to="/modules" onClick={closeAllMenus} className="block text-text-primary dark:text-gray-200 hover:text-primary transition-colors py-1">Modules</Link>
                              <Link to="/versions" onClick={closeAllMenus} className="block text-text-primary dark:text-gray-200 hover:text-primary transition-colors py-1">Deployment</Link>
+                             <Link to="/msp" onClick={closeAllMenus} className="block text-text-primary dark:text-gray-200 hover:text-primary transition-colors py-1">MSP</Link>
                         </div>
                     )}
                 </div>

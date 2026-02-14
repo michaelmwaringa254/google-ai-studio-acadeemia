@@ -114,44 +114,76 @@ const AffiliateToolsPage: React.FC = () => {
     setSubmitting(true);
 
     try {
+      if (!formData.name.trim()) {
+        alert('Tool name is required');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        alert('Description is required');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.logo_url.trim()) {
+        alert('Logo URL is required');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.affiliate_link.trim()) {
+        alert('Affiliate link is required');
+        setSubmitting(false);
+        return;
+      }
+
       if (editingTool) {
         const { error } = await supabase
           .from('affiliate_tools')
           .update({
-            name: formData.name,
-            description: formData.description,
-            logo_url: formData.logo_url,
-            affiliate_link: formData.affiliate_link,
-            category: formData.category || null,
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            logo_url: formData.logo_url.trim(),
+            affiliate_link: formData.affiliate_link.trim(),
+            category: formData.category?.trim() || null,
             is_active: formData.is_active,
             display_order: formData.display_order,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', editingTool.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error details:', error);
+          throw error;
+        }
         alert('Tool updated successfully!');
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('affiliate_tools')
           .insert([{
-            name: formData.name,
-            description: formData.description,
-            logo_url: formData.logo_url,
-            affiliate_link: formData.affiliate_link,
-            category: formData.category || null,
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            logo_url: formData.logo_url.trim(),
+            affiliate_link: formData.affiliate_link.trim(),
+            category: formData.category?.trim() || null,
             is_active: formData.is_active,
             display_order: formData.display_order,
-          }]);
+          }])
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error details:', error);
+          throw error;
+        }
         alert('Tool added successfully!');
       }
 
-      fetchTools();
+      await fetchTools();
       closeModal();
     } catch (error: any) {
-      console.error('Error saving tool:', error.message);
-      alert(`Failed to save tool: ${error.message}`);
+      console.error('Error saving tool:', error);
+      alert(`Failed to save tool: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }
@@ -182,11 +214,14 @@ const AffiliateToolsPage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('affiliate_tools')
-        .update({ is_active: !tool.is_active })
+        .update({
+          is_active: !tool.is_active,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', tool.id);
 
       if (error) throw error;
-      fetchTools();
+      await fetchTools();
     } catch (error: any) {
       console.error('Error toggling tool status:', error.message);
       alert('Failed to update tool status');

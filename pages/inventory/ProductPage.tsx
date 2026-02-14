@@ -110,9 +110,72 @@ const FormField = ({ label, name, type = 'text', required = false, placeholder =
     </div>
 );
 
+const CustomDropdown = ({
+    id,
+    name,
+    options,
+    placeholder,
+    onSelect,
+    disabled = false,
+    isOpen,
+    setIsOpen
+}: {
+    id: string;
+    name: string;
+    options: { value: string; label: string }[];
+    placeholder: string;
+    onSelect: (value: string) => void;
+    disabled?: boolean;
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+}) => {
+    const [selectedValue, setSelectedValue] = useState('');
+
+    const handleSelect = (value: string) => {
+        setSelectedValue(value);
+        onSelect(value);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                id={id}
+                disabled={disabled}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onBlur={() => setTimeout(() => setIsOpen(false), 150)}
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed text-left"
+            >
+                {selectedValue || placeholder}
+            </button>
+            {isOpen && !disabled && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border dark:border-gray-700">
+                    {options.map(option => (
+                        <a
+                            key={option.value}
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); handleSelect(option.value); }}
+                            className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-md last:rounded-b-md"
+                        >
+                            {option.label}
+                        </a>
+                    ))}
+                </div>
+            )}
+            <input type="hidden" name={name} value={selectedValue} />
+        </div>
+    );
+};
+
 const CreateProductForm = ({ onProductAdded }: { onProductAdded: () => void }) => {
     const [schools, setSchools] = useState<School[]>([]);
     const [loadingSchools, setLoadingSchools] = useState(true);
+    const [schoolDropdownOpen, setSchoolDropdownOpen] = useState(false);
+    const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+    const [purchaseUnitDropdownOpen, setPurchaseUnitDropdownOpen] = useState(false);
+    const [saleUnitDropdownOpen, setSaleUnitDropdownOpen] = useState(false);
+    const [selectedSchool, setSelectedSchool] = useState('');
 
     useEffect(() => {
         const fetchSchools = async () => {
@@ -145,48 +208,75 @@ const CreateProductForm = ({ onProductAdded }: { onProductAdded: () => void }) =
         onProductAdded();
     };
 
+    const schoolOptions = schools.map(school => ({ value: school.name, label: school.name }));
+
     return (
         <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <FormField label="School" name="school" required>
-                     <select id="school" name="school" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" disabled={loadingSchools}>
-                        <option value="">{loadingSchools ? 'Loading...' : 'Select'}</option>
-                        {schools.map(school => (
-                            <option key={school.id} value={school.name}>
-                                {school.name}
-                            </option>
-                        ))}
-                    </select>
-                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
+                    <CustomDropdown
+                        id="school"
+                        name="school"
+                        options={schoolOptions}
+                        placeholder={loadingSchools ? 'Loading...' : 'Select'}
+                        disabled={loadingSchools}
+                        isOpen={schoolDropdownOpen}
+                        setIsOpen={setSchoolDropdownOpen}
+                        onSelect={setSelectedSchool}
+                    />
                 </FormField>
                 <FormField label="Product Name" name="name" required />
                 <FormField label="Product Code" name="code" required />
                 <FormField label="Product Category" name="category" required placeholder="First Select The School">
-                     <select id="category" name="category" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>First Select The School</option>
-                        {/* Options would be populated based on branch selection */}
-                    </select>
-                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
+                    <CustomDropdown
+                        id="category"
+                        name="category"
+                        options={[
+                            { value: 'Electronics', label: 'Electronics' },
+                            { value: 'Stationary', label: 'Stationary' },
+                            { value: 'Books', label: 'Books' },
+                            { value: 'Furniture', label: 'Furniture' },
+                        ]}
+                        placeholder="First Select The School"
+                        disabled={!selectedSchool}
+                        isOpen={categoryDropdownOpen}
+                        setIsOpen={setCategoryDropdownOpen}
+                        onSelect={() => {}}
+                    />
                 </FormField>
                 <FormField label="Purchase Unit" name="purchaseUnit" required placeholder="First Select The School">
-                    <select id="purchaseUnit" name="purchaseUnit" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>First Select The School</option>
-                    </select>
-                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
+                    <CustomDropdown
+                        id="purchaseUnit"
+                        name="purchaseUnit"
+                        options={[
+                            { value: 'KG', label: 'KG' },
+                            { value: 'Piece', label: 'Piece' },
+                            { value: 'Box', label: 'Box' },
+                            { value: 'Carton', label: 'Carton' },
+                        ]}
+                        placeholder="First Select The School"
+                        disabled={!selectedSchool}
+                        isOpen={purchaseUnitDropdownOpen}
+                        setIsOpen={setPurchaseUnitDropdownOpen}
+                        onSelect={() => {}}
+                    />
                 </FormField>
-                 <FormField label="Sales Unit" name="saleUnit" required placeholder="First Select The School">
-                    <select id="saleUnit" name="saleUnit" required className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>First Select The School</option>
-                    </select>
-                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
+                <FormField label="Sales Unit" name="saleUnit" required placeholder="First Select The School">
+                    <CustomDropdown
+                        id="saleUnit"
+                        name="saleUnit"
+                        options={[
+                            { value: 'Gram', label: 'Gram' },
+                            { value: 'Piece', label: 'Piece' },
+                            { value: 'Pack', label: 'Pack' },
+                            { value: 'Unit', label: 'Unit' },
+                        ]}
+                        placeholder="First Select The School"
+                        disabled={!selectedSchool}
+                        isOpen={saleUnitDropdownOpen}
+                        setIsOpen={setSaleUnitDropdownOpen}
+                        onSelect={() => {}}
+                    />
                 </FormField>
                 <FormField label="Unit Ratio" name="unitRatio" required placeholder="Eg. Purchase Unit : KG & Sales Unit : Gram = Ratio : 1000" />
                 <FormField label="Purchase Price" name="purchasePrice" type="number" required />

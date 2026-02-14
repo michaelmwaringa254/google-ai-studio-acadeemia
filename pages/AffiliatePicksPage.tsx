@@ -111,6 +111,24 @@ const AffiliatePicksPage = () => {
     };
 
     fetchTools();
+
+    // Set up real-time listener for affiliate_tools changes
+    const subscription = supabase
+      .channel('affiliate_tools_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'affiliate_tools' },
+        () => {
+          // Refetch tools when changes occur
+          fetchTools();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

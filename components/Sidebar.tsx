@@ -233,6 +233,7 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }: { isSidebarOpen: boolean, se
   const companyManagementNavItems: NavItemType[] = [
       { name: 'Company Dashboard', icon: icons.dashboard, path: '/company-dashboard' },
       { name: 'CRM', icon: icons.crm, path: '/crm' },
+      { name: 'CMS', icon: icons.file, path: '/company/cms' },
       { name: 'Blog Manager', icon: icons.courses, children: [
           { name: 'Dashboard', path: '/company/blog-manager' },
           { name: 'Posts', path: '/company/blog-manager/posts' },
